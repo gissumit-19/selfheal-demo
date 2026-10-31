@@ -37,6 +37,34 @@ def port_busy(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
+def sdk_check(env: dict) -> None:
+    """Connect the way the agent does (through the model SDK), so proxy/certificate problems show up here."""
+    sys.path.insert(0, str(ROOT))
+    import heal  # noqa: F401  (switches HTTPS to the OS certificate store, like the agent)
+    provider = env.get("LLM_PROVIDER") or ("anthropic" if env.get("ANTHROPIC_API_KEY") else "openai")
+    try:
+        if provider == "openai" and env.get("OPENAI_API_KEY"):
+            import openai
+            openai.OpenAI(api_key=env["OPENAI_API_KEY"], base_url=env.get("OPENAI_BASE_URL") or None).models.list()
+        elif provider == "anthropic" and env.get("ANTHROPIC_API_KEY"):
+            import anthropic
+            anthropic.Anthropic(api_key=env["ANTHROPIC_API_KEY"]).models.list()
+        else:
+            return
+        ok(f"{provider} SDK can connect (same path the agent uses)")
+    except Exception as e:
+        cause = e
+        while cause.__cause__ or cause.__context__:
+            cause = cause.__cause__ or cause.__context__
+        why = f"{type(cause).__name__}: {str(cause)[:160]}"
+        hint = ("corporate HTTPS inspection: ask IT for the root certificate to be in the Windows store, "
+                "or set SSL_CERT_FILE to it" if "CERTIFICATE" in why.upper() else
+                "proxy/firewall: set HTTPS_PROXY=http://<proxy>:<port> in .env, or try off the VPN"
+                if any(w in why.lower() for w in ("connect", "timed out", "getaddrinfo", "resolve", "proxy")) else
+                "check the key and OPENAI_BASE_URL in .env")
+        bad(f"{provider} SDK cannot connect ({why}) -> {hint}")
+
+
 def main() -> int:
     where = "Windows" if IS_WINDOWS else "WSL" if IS_WSL else sys.platform
     print(f"== system: {where}, Python {sys.version.split()[0]}")
@@ -145,8 +173,9 @@ def main() -> int:
 
     print("== python packages")
     try:
-        import anthropic, dotenv, openai, requests, yaml  # noqa: F401
+        import anthropic, dotenv, openai, requests, truststore, yaml  # noqa: F401
         ok("requirements installed")
+        sdk_check(env)
     except ImportError as e:
         bad(f"missing package ({e.name}): activate the venv and run `pip install -r requirements.txt` (guide step 4)")
 
