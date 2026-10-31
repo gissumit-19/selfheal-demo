@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+    inputs:
+      flaky:
+        description: "enable the timing-sensitive (flaky) test"
+        type: boolean
+        default: false
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m py_compile service/*.py heal/*.py heal/adapters/*.py
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install pytest
+      - name: pytest
+        working-directory: service
+        env:
+          FLAKY: ${{ inputs.flaky && '1' || '0' }}
+          FLAKY_ATTEMPT: ${{ github.run_attempt }}
+        run: python -m pytest -q tests

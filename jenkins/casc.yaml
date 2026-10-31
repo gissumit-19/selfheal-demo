@@ -1,0 +1,39 @@
+# Jenkins configuration as code: admin user, executors and the traffic-api-ci pipeline job.
+# ${...} values come from the container environment (infra/compose.yaml).
+jenkins:
+  systemMessage: "self-healing CI/CD demo"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy: loggedInUsersCanDoAnything
+security:
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+unclassified:
+  location:
+    url: "http://localhost:8081/"
+jobs:
+  - script: |
+      pipelineJob('traffic-api-ci') {
+        description('Builds and smoke-tests traffic-api. Pipeline defined in jenkins/Jenkinsfile in the GitHub repo.')
+        parameters {
+          choiceParam('SCENARIO', ['normal', 'flaky'], 'flaky enables the timing-sensitive test')
+          stringParam('TRIGGERED_BY', 'user', 'heal-agent when the agent rebuilds')
+        }
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('${GITHUB_REPO_URL}') }
+                branch('*/main')
+              }
+            }
+            scriptPath('jenkins/Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

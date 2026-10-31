@@ -1,0 +1,67 @@
+# The ONLY actions the agent can get executed. Anything else is denied by heal/policy.py.
+# Each precondition names a check in heal/policy.py; the check reads LIVE state from the
+# platform (never the model's description of it). Teams edit this file, not the code.
+#
+#   risk/mode     low+auto runs without a human; medium+approval always waits for one
+#   max_attempts  per incident; a failed fix loops back to the guard, which then escalates
+
+actions:
+  gha_rerun_failed_jobs:
+    id: RB-GHA-01
+    system: github
+    risk: low
+    mode: auto
+    max_attempts: 1
+    params: [run_id]
+    when: >-
+      A GitHub Actions job failed for a transient or flaky reason (timeout, network, cold cache)
+      and the triggering commit did not change code. Re-runs only the failed jobs.
+    preconditions:
+      - check: gha_first_attempt
+      - check: gha_commit_safe_or_known_flaky
+        min_resolved_reruns: 2
+
+  jenkins_rebuild:
+    id: RB-JEN-01
+    system: jenkins
+    risk: low
+    mode: auto
+    max_attempts: 1
+    params: [build_number]
+    when: >-
+      A Jenkins build failed for a transient reason (flaky test, or the smoke stage hit a
+      dependency that was unhealthy and is healthy now). Rebuilds with the same parameters.
+    preconditions:
+      - check: jenkins_not_agent_rebuild
+      - check: service_healthy
+
+  argocd_rollback:
+    id: RB-ARGO-01
+    system: argocd
+    risk: medium
+    mode: approval
+    max_attempts: 1
+    params: [history_id]
+    when: >-
+      The service breaches its smoke budget right after an Argo CD sync. Roll back to the
+      previous history entry (the last known good revision). Git still points at the bad
+      commit afterwards, so a follow-up issue asks for a revert.
+    preconditions:
+      - check: service_unhealthy
+      - check: argocd_target_is_previous
+      - check: argocd_recent_deploy
+        max_age_minutes: 240
+
+  airflow_clear_failed:
+    id: RB-AF-01
+    system: airflow
+    risk: low
+    mode: auto
+    max_attempts: 1
+    params: [dag_run_id]
+    when: >-
+      A DAG run failed because a downstream dependency (traffic-api) was failing, and the
+      dependency is healthy now. Clears the failed tasks so the scheduler re-runs them.
+    preconditions:
+      - check: airflow_run_failed
+      - check: service_healthy

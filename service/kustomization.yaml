@@ -1,0 +1,9 @@
+# Argo CD renders this directory with kustomize. app.py is shipped as a ConfigMap, and the
+# generated name has a content hash, so every code change rolls the pods.
+namespace: traffic
+resources:
+  - deployment.yaml
+configMapGenerator:
+  - name: traffic-api-code
+    files:
+      - app.py

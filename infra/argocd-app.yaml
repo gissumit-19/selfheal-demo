@@ -1,0 +1,17 @@
+# Manual sync on purpose: Argo CD only allows a rollback when automated sync is off.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traffic-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/__GITHUB_REPO__.git
+    targetRevision: main
+    path: service
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traffic
+  syncPolicy:
+    syncOptions: [CreateNamespace=true]

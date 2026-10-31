@@ -1,0 +1,27 @@
+name: heal-demo
+services:
+  jenkins:
+    build: ../jenkins
+    ports: ["${JENKINS_PORT:-8081}:8080"]
+    environment:
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_TOKEN:?set JENKINS_TOKEN in .env}
+      GITHUB_REPO_URL: https://github.com/${GITHUB_REPO:?set GITHUB_REPO in .env}.git
+      TRAFFIC_API_URL: http://host.docker.internal:30080
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: [jenkins_home:/var/jenkins_home]
+  airflow:
+    image: ${AIRFLOW_IMAGE:-apache/airflow:3.3.2}
+    command: standalone
+    ports: ["${AIRFLOW_PORT:-8082}:8080"]
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/passwords.json
+      TRAFFIC_API_URL: http://host.docker.internal:30080
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/passwords.json:/opt/airflow/passwords.json
+volumes:
+  jenkins_home: {}

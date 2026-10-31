@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-api
+  labels: {app: traffic-api}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: traffic-api}
+  template:
+    metadata:
+      labels: {app: traffic-api}
+    spec:
+      containers:
+        - name: traffic-api
+          image: python:3.12-alpine
+          command: ["python", "/app/app.py"]
+          env:
+            - name: APP_VERSION
+              value: "1.0.0"
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8000}
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {memory: 128Mi}
+          volumeMounts:
+            - {name: code, mountPath: /app}
+      volumes:
+        - name: code
+          configMap:
+            name: traffic-api-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-api
+spec:
+  type: NodePort
+  selector: {app: traffic-api}
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30080

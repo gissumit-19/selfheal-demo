@@ -1,0 +1,34 @@
+# In-pipeline self-healing: when "ci" fails, run the agent inside GitHub Actions.
+# Off until you opt in: set repo variable HEAL_ENABLED=true and secret ANTHROPIC_API_KEY.
+# From here only GitHub is reachable, so HEAL_SOURCES=github. Medium-risk actions are refused
+# (AUTO_APPROVE=no, nobody at a keyboard) and become issues.
+name: heal
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+permissions:
+  actions: write
+  issues: write
+  contents: read
+jobs:
+  heal:
+    if: github.event.workflow_run.conclusion == 'failure' && vars.HEAL_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements.txt
+      - name: self-heal
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          HEAL_SOURCES: github
+          AUTO_APPROVE: "no"
+          HEAL_WAIT_TIMEOUT: "900"
+        run: python -m heal handle --source github --ref ${{ github.event.workflow_run.id }} --execute
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: heal-audit, path: runtime/audit.jsonl, if-no-files-found: ignore}

@@ -1,0 +1,24 @@
+// traffic-api CI on Jenkins: unit tests, then a smoke test against the Argo CD-deployed service.
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'SCENARIO', choices: ['normal', 'flaky'], description: 'flaky enables the timing-sensitive test')
+    string(name: 'TRIGGERED_BY', defaultValue: 'user', description: 'heal-agent when the agent rebuilds')
+  }
+  options { timeout(time: 15, unit: 'MINUTES') }
+  stages {
+    stage('Unit tests') {
+      steps {
+        sh '''
+          cd service
+          if [ "$SCENARIO" = flaky ]; then export FLAKY=1; fi
+          export FLAKY_ATTEMPT="$TRIGGERED_BY"
+          python3 -m pytest -q tests
+        '''
+      }
+    }
+    stage('Smoke: staging traffic-api') {
+      steps { sh 'python3 service/smoke.py "$TRAFFIC_API_URL"' }
+    }
+  }
+}
