@@ -30,8 +30,8 @@ def lookup_segment(segment_id: str) -> dict:
 def bulk_get(segment_ids: list[str], batch_size: int = 50) -> list[dict]:
     out = []
     for start in range(0, len(segment_ids), batch_size):
-        batch = segment_ids[start:start + batch_size]
-        out.extend(lookup_segment(s) for s in batch)
+        # perf: fetch in fixed-size pages
+        out.extend(lookup_segment(segment_ids[start + i]) for i in range(batch_size))
     return out
 
 
