@@ -6,10 +6,10 @@ Total time: about 30 to 45 minutes of setup the first time (most of it downloads
 
 | | |
 |---|---|
-| Accounts | A **GitHub** account. An **Anthropic API key** with credit (console.anthropic.com > API keys). |
+| Accounts | A **GitHub** account. An **Anthropic API key** (console.anthropic.com) **or** an **OpenAI API key** (platform.openai.com), with credit. |
 | Machine | macOS (Intel or Apple Silicon), Linux, or Windows 10/11 with **WSL2**. 16 GB RAM recommended (8 GB minimum), 15 GB free disk. |
 | Network | About 3 GB of downloads. Access to github.com, api.anthropic.com, Docker Hub and raw.githubusercontent.com. |
-| Cost | The Claude calls cost roughly **$0.05 to $0.25 per incident** the agent investigates, so about **$1 to $3 for all the labs**. Set `CLAUDE_EFFORT=low` in `.env` to spend less. GitHub Actions minutes are free for public repos. |
+| Cost | The model calls cost roughly **$0.05 to $0.25 per incident** the agent investigates, so about **$1 to $3 for all the labs**. Set `CLAUDE_EFFORT=low` or `OPENAI_REASONING_EFFORT=low` in `.env` to spend less. GitHub Actions minutes are free for public repos. |
 
 Everything runs on your machine except GitHub. Nothing touches any other Kubernetes cluster you have:
 the scripts only use the context `kind-heal-demo`.
@@ -84,7 +84,7 @@ Public is required: Argo CD and Jenkins clone the repo without credentials.
 cp .env.example .env
 ```
 Edit `.env` and set at least:
-- `ANTHROPIC_API_KEY=` your key
+- **one** model key: `ANTHROPIC_API_KEY=` **or** `OPENAI_API_KEY=` (with both set, `LLM_PROVIDER=openai` or `anthropic` picks)
 - `GITHUB_REPO=<your-user>/selfheal-demo`
 - `JENKINS_TOKEN=` any password you like (it becomes the Jenkins admin password)
 
@@ -191,8 +191,8 @@ Then repeat Lab A: `[recall]` now shows the earlier fix. Open `runtime/audit.jso
 approval, action and validation is recorded there.
 
 ### Lab E (optional): self-healing inside GitHub Actions
-In your repo: **Settings > Secrets and variables > Actions**. Add the secret `ANTHROPIC_API_KEY` and the variable
-`HEAL_ENABLED` = `true`. Now when **ci** fails, the **heal** workflow runs the agent inside GitHub Actions. Trigger it
+In your repo: **Settings > Secrets and variables > Actions**. Add the secret `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+(for OpenAI also the variable `LLM_PROVIDER` = `openai`) and the variable `HEAL_ENABLED` = `true`. Now when **ci** fails, the **heal** workflow runs the agent inside GitHub Actions. Trigger it
 with `python scenarios.py flaky` and watch the Actions tab. Turn it off again (`HEAL_ENABLED=false`) before other labs,
 or the local agent and the Actions agent will both handle the same GitHub failures.
 
@@ -220,6 +220,7 @@ docker system prune -a           # optional: frees the disk space used by the im
 | `git push` asks for a password | Run `gh auth setup-git`, or paste your fine-grained token as the password. |
 | Airflow `publish_traffic_api` fails with "connection refused" | traffic-api is not running: `python scenarios.py bootstrap`. On Linux, Docker must support `host-gateway` (Docker 20.10+). |
 | `Error 400 ... fallbacks` from the model | Your account does not support the fallback beta. Set `CLAUDE_FALLBACKS=0` in `.env`. |
-| `Error 401` from the model | Wrong `ANTHROPIC_API_KEY`. Check with `./infra/preflight.sh`. |
+| `Error 401` from the model | Wrong or revoked key (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`). Check with `./infra/preflight.sh`. A key exported in your shell wins over `.env`. |
+| OpenAI `400 ... Function tools with reasoning_effort are not supported ... in /v1/chat/completions` | Keep `OPENAI_API_STYLE=responses` (the default). Only use `chat` for servers without the Responses API, and then leave `OPENAI_REASONING_EFFORT` empty. |
 | scenario says "expected text not found" | A previous scenario is still applied: `python scenarios.py reset`. |
 | Windows: `bad interpreter: /bin/bash^M` | The files got Windows line endings. Work inside WSL (`~/...`) and run `git config --global core.autocrlf input`, then clone again. |

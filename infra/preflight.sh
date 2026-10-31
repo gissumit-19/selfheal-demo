@@ -35,7 +35,8 @@ fi
 echo "== .env"
 if [ -f .env ]; then
   set -a; . ./.env; set +a; ok ".env found"
-  [ -n "${ANTHROPIC_API_KEY:-}" ] && ok "ANTHROPIC_API_KEY set" || bad "ANTHROPIC_API_KEY is empty"
+  if [ -n "${ANTHROPIC_API_KEY:-}" ] || [ -n "${OPENAI_API_KEY:-}" ]; then ok "model key set (provider: ${LLM_PROVIDER:-auto})"
+  else bad "set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env"; fi
   case "${GITHUB_REPO:-}" in ""|your-user/*) bad "set GITHUB_REPO=<your-github-user>/selfheal-demo";; *) ok "GITHUB_REPO=$GITHUB_REPO";; esac
   [ "${JENKINS_TOKEN:-}" = "change-me-jenkins" ] && warn "JENKINS_TOKEN is still the default password (fine on a laptop)"
 else
@@ -51,11 +52,16 @@ for p in "${JENKINS_PORT:-8081}:Jenkins" "${AIRFLOW_PORT:-8082}:Airflow" "30080:
   else ok "port $n ($name) free"; fi
 done
 
-echo "== Anthropic API (free models list call, no tokens used)"
-if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+echo "== model API (free models-list call, no tokens used)"
+if [ -n "${ANTHROPIC_API_KEY:-}" ] && [ "${LLM_PROVIDER:-}" != openai ]; then
   code=$(curl -s -o /dev/null -w '%{http_code}' https://api.anthropic.com/v1/models \
          -H "x-api-key: $ANTHROPIC_API_KEY" -H "anthropic-version: 2023-06-01")
-  [ "$code" = 200 ] && ok "API key accepted" || bad "API key check returned HTTP $code (401 = wrong key; 000 = no network/proxy)"
+  [ "$code" = 200 ] && ok "Anthropic API key accepted" || bad "Anthropic key check returned HTTP $code (401 = wrong key; 000 = no network/proxy)"
+fi
+if [ -n "${OPENAI_API_KEY:-}" ] && [ "${LLM_PROVIDER:-}" != anthropic ]; then
+  base="${OPENAI_BASE_URL:-https://api.openai.com/v1}"
+  code=$(curl -s -o /dev/null -w '%{http_code}' "${base%/}/models" -H "Authorization: Bearer $OPENAI_API_KEY")
+  [ "$code" = 200 ] && ok "OpenAI API key accepted ($base)" || bad "OpenAI key check returned HTTP $code (401 = wrong key; 000 = no network/proxy)"
 fi
 
 echo "== GitHub"
@@ -80,7 +86,7 @@ fi
 
 echo "== python packages"
 PY=python3; [ -x .venv/bin/python ] && PY=.venv/bin/python
-$PY -c "import anthropic, requests, yaml, dotenv" 2>/dev/null && ok "requirements installed ($PY)" \
+$PY -c "import anthropic, openai, requests, yaml, dotenv" 2>/dev/null && ok "requirements installed ($PY)" \
   || bad "run: python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt"
 
 echo "== kubernetes context"

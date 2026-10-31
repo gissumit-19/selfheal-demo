@@ -31,6 +31,15 @@ def _github_token() -> str:
         return ""
 
 
+def _provider() -> str:
+    chosen = env("LLM_PROVIDER").lower()
+    if chosen in ("anthropic", "openai"):
+        return chosen
+    if env("ANTHROPIC_API_KEY") or env("ANTHROPIC_AUTH_TOKEN"):
+        return "anthropic"
+    return "openai" if env("OPENAI_API_KEY") else "none"
+
+
 @dataclass
 class Settings:
     sources: list[str] = field(default_factory=lambda: [s.strip() for s in env(
@@ -39,10 +48,15 @@ class Settings:
     wait_timeout: int = int(env("HEAL_WAIT_TIMEOUT", "900"))        # seconds to wait when validating a fix
     runtime_dir: Path = Path(env("HEAL_RUNTIME_DIR", str(ROOT / "runtime")))
 
-    # Model
+    # Model: LLM_PROVIDER=anthropic|openai (empty = whichever key is set)
+    provider: str = field(default_factory=_provider)
     model: str = env("CLAUDE_MODEL", "claude-opus-5-5")
     effort: str = env("CLAUDE_EFFORT", "medium")
     fallbacks: bool = env("CLAUDE_FALLBACKS", "1") == "1"
+    openai_model: str = env("OPENAI_MODEL", "gpt-5.5")
+    openai_base_url: str = env("OPENAI_BASE_URL")              # Azure OpenAI / OpenAI-compatible servers
+    openai_api_style: str = env("OPENAI_API_STYLE", "responses")   # responses | chat
+    openai_reasoning_effort: str = env("OPENAI_REASONING_EFFORT", "medium")   # empty for non-reasoning models
 
     # GitHub Actions
     github_repo: str = env("GITHUB_REPO")

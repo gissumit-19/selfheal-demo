@@ -10,7 +10,8 @@
 4. **Bandwidth:** each learner downloads about 3 GB. On shared Wi-Fi, ask learners to run `./infra/up.sh` the day before.
    Or run `./infra/prepull.sh` at home and keep the stack between days. `down.sh` deletes it, so don't run that until
    the end.
-5. **API keys:** one key per learner is simplest. If you share one org key, check its rate limits: about 30 learners
+5. **API keys:** learners can use Anthropic **or** OpenAI keys (`LLM_PROVIDER`). Running half the class on each is a
+   good discussion: the guard's verdicts are the same whichever model proposes. One key per learner is simplest. If you share one org key, check its rate limits: about 30 learners
    running Lab C at once is about 30 parallel agent loops. Budget about $1 to $3 per learner (see guide step 0).
 
 ## Timing plan (about 2 hours)

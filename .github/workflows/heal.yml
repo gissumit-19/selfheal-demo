@@ -1,5 +1,5 @@
 # In-pipeline self-healing: when "ci" fails, run the agent inside GitHub Actions.
-# Off until you opt in: set repo variable HEAL_ENABLED=true and secret ANTHROPIC_API_KEY.
+# Off until you opt in: set repo variable HEAL_ENABLED=true and secret ANTHROPIC_API_KEY or OPENAI_API_KEY.
 # From here only GitHub is reachable, so HEAL_SOURCES=github. Medium-risk actions are refused
 # (AUTO_APPROVE=no, nobody at a keyboard) and become issues.
 name: heal
@@ -23,6 +23,8 @@ jobs:
       - name: self-heal
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
           HEAL_SOURCES: github

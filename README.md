@@ -11,8 +11,10 @@ This is the real version of the Module 6 labs. Nothing here is mocked. The agent
 | **Airflow 3** | Docker (`traffic_probe_daily`) | failed DAG runs, task instances, task logs | clear failed tasks (scheduler re-runs them) |
 | **traffic-api** | kind, deployed by Argo CD from your repo | live smoke probe (error rate, p95) | none |
 
-The model is Claude (`claude-opus-5-5` by default) called through the Anthropic SDK. If there is no API
-key, the agent fails. It never switches to a scripted mock.
+The model is **Claude** (`claude-opus-5-5`, Anthropic SDK) or **OpenAI GPT** (`gpt-5.5`, OpenAI Responses API).
+Set one key; `LLM_PROVIDER=anthropic|openai` picks one if you have both. If there is no key, the agent fails. It
+never switches to a scripted mock. `OPENAI_API_STYLE=chat` + `OPENAI_BASE_URL` also works with Azure OpenAI and
+OpenAI-compatible servers.
 
 **What is still staged:** the *failures* are caused on purpose (`scenarios.py`). Each one happens for
 real: a bad commit is pushed and deployed, a test times out, a DAG task gets HTTP 500s. One more thing
@@ -47,7 +49,7 @@ expected output, the labs, troubleshooting). Trainers: [docs/TRAINER_NOTES.md](d
 
 Short version:
 ```bash
-cp .env.example .env                 # ANTHROPIC_API_KEY, GITHUB_REPO, JENKINS_TOKEN
+cp .env.example .env                 # ANTHROPIC_API_KEY or OPENAI_API_KEY, GITHUB_REPO, JENKINS_TOKEN
 python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 gh repo create <you>/selfheal-demo --public --source . --push   # after git init + first commit
 ./infra/preflight.sh                 # checks tools, Docker memory, ports, keys, repo; changes nothing
@@ -108,7 +110,7 @@ heal/                    the agent
   ports.py               the interfaces adapters implement
   runbook.yaml           allowed actions, risk, approval, preconditions
   policy.py              the guard and its live precondition checks
-  agent.py               Claude investigation loop (read-only tools, submit_rca)
+  agent.py               investigation loop (read-only tools, submit_rca); Anthropic or OpenAI backend
   workflow.py            decide -> approve -> execute -> validate -> escalate -> learn
   detect.py, actions.py, tools.py, memory.py, redact.py, approval.py, __main__.py
 service/                 traffic-api (app, tests, smoke check, k8s manifests Argo CD deploys)

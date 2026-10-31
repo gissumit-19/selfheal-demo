@@ -21,7 +21,8 @@ from heal.context import build_context
 def banner(ctx, execute: bool) -> None:
     up = [n for n in ("github", "jenkins", "argocd", "airflow", "service") if getattr(ctx, n)]
     print("=" * 78)
-    print(f"self-healing agent  model={SETTINGS.model}  mode={'EXECUTE' if execute else 'DRY RUN'}")
+    model = SETTINGS.model if SETTINGS.provider == "anthropic" else SETTINGS.openai_model
+    print(f"self-healing agent  model={SETTINGS.provider}:{model}  mode={'EXECUTE' if execute else 'DRY RUN'}")
     print(f"connected: {', '.join(up) or 'nothing'}")
     for n, why in ctx.errors.items():
         print(f"  not connected: {n} ({why})")
@@ -47,9 +48,15 @@ def doctor() -> int:
         except Exception as e:
             bad += 1
             print(f"  {name:<8} FAIL {type(e).__name__}: {e}")
-    has_key = bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"))
-    print(f"  {'model':<8} {'OK  ' if has_key else '??  '} {SETTINGS.model} "
-          f"({'API key set' if has_key else 'no ANTHROPIC_API_KEY; relying on an `ant auth login` profile if any'})")
+    if SETTINGS.provider == "anthropic":
+        has_key = bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"))
+        print(f"  {'model':<8} {'OK  ' if has_key else '??  '} anthropic:{SETTINGS.model} "
+              f"({'API key set' if has_key else 'no ANTHROPIC_API_KEY; relying on an `ant auth login` profile if any'})")
+    elif SETTINGS.provider == "openai":
+        print(f"  {'model':<8} OK   openai:{SETTINGS.openai_model}" + (f" via {SETTINGS.openai_base_url}" if SETTINGS.openai_base_url else ""))
+    else:
+        bad += 1
+        print(f"  {'model':<8} FAIL no ANTHROPIC_API_KEY or OPENAI_API_KEY set")
     return 1 if bad else 0
 
 
