@@ -126,6 +126,18 @@ def main() -> int:
             ok(f"repo {repo} is public") if r.get("visibility") == "public" else bad(
                 f"repo {repo} is private: make it public (Argo CD and Jenkins clone it without credentials)")
             ok("your login can push to it") if r.get("permissions", {}).get("push") else bad(f"your login cannot push to {repo}")
+            if r.get("fork") and r.get("has_issues") is False:
+                bad("Issues are OFF on your fork (GitHub's default): Settings > General > Features > tick Issues, "
+                    f"or run: gh repo edit {repo} --enable-issues")
+            elif r.get("has_issues"):
+                ok("Issues enabled (the agent opens escalations there)")
+            code, body = http(f"https://api.github.com/repos/{repo}/actions/workflows", {"Authorization": f"Bearer {token}"})
+            states = {w["path"].rsplit("/", 1)[-1]: w["state"] for w in json.loads(body).get("workflows", [])} if code == 200 else {}
+            if states.get("ci.yml") == "active":
+                ok("GitHub Actions enabled (ci.yml active)")
+            else:
+                bad(f"GitHub Actions not enabled on {repo} (ci.yml: {states.get('ci.yml', 'not visible')}): open "
+                    f"https://github.com/{repo}/actions and click 'I understand my workflows, go ahead and enable them'")
         else:
             warn(f"repo {repo} not found yet (HTTP {code}): create it in guide step 3, then run this again")
         remote = out("git", "remote", "get-url", "origin")

@@ -117,6 +117,12 @@ gh repo create <your-user>/selfheal-demo --public --source . --push
 
 Public is required: Argo CD and Jenkins clone the repo without credentials.
 
+**If you forked** instead of using the template, GitHub turns two things off on new forks. Turn them on:
+- Actions: open the **Actions** tab of your fork, then **I understand my workflows, go ahead and enable them**.
+- Issues: `gh repo edit <you>/selfheal-demo --enable-issues` (or Settings > General > Features > **Issues**).
+
+Already have a copy from earlier? Follow [UPDATING.md](UPDATING.md) to get the latest version.
+
 ## 4. Configure
 
 ```bash
