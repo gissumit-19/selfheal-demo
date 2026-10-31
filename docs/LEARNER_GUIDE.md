@@ -170,8 +170,12 @@ python -m heal scan --execute
 **Expect, in this order:**
 1. the **deploy** incident: `argocd_rollback` needs **approval**. Type `y`. Argo CD rolls back to 1.0.0, the probe
    confirms it is healthy, and a follow-up issue asks you to revert the bad commit in git.
-2. **Jenkins**: rebuild allowed (the service is healthy again), then `FIXED`.
+2. **Jenkins**: usually a rebuild (the service is healthy again), then `FIXED`. Some model runs escalate here instead,
+   calling the failure a "code regression". That is safe but conservative. Ask: was Jenkins the *cause* or a *victim*?
 3. **Airflow**: clear the failed task (the service is healthy again). The DAG run ends `success`.
+
+Note: GitHub CI is **green** for the bad commit. The unit tests only use a full page of 50 segments, so they miss the
+bug, and only the smoke test and the real DAG traffic (120 segments) catch it. That is a good discussion point too.
 
 **Discuss:** why does the deploy incident come first? What would happen to the Airflow incident if it were
 handled before the rollback?
@@ -182,8 +186,10 @@ python scenarios.py reset
 python scenarios.py bad-deploy
 ```
 Wait for the failures, run `python -m heal scan --execute`, and answer **`n`** at the approval prompt.
-**Expect:** the deploy incident escalates. Jenkins and Airflow are **denied** too (`service ... errors 100%`), so they
-escalate instead of retrying against a broken service. The agent does not work around a human "no".
+**Expect:** the deploy incident escalates (`human declined argocd_rollback`). Jenkins escalates because the service is
+still broken. For Airflow the model may propose the rollback again, since it is the real fix, and you are asked
+again: say `n` again. A rebuild or clear is never allowed while the dependency is unhealthy (`service_healthy` in
+`runbook.yaml`). The agent does not work around a human "no". Run `python scenarios.py reset` afterwards.
 
 ### Lab D: memory and the audit trail (about 10 min)
 Run `python -m heal scan --execute` again: `0 new incident(s)`, because processed incidents are never handled twice.

@@ -1,5 +1,12 @@
 # Self-healing CI/CD: a real demo (GitHub Actions, Jenkins, Argo CD, Airflow)
 
+> **Learners:** click **Use this template > Create a new repository** (make it **Public**), clone your copy, and
+> follow **[docs/LEARNER_GUIDE.md](docs/LEARNER_GUIDE.md)**. **Trainers:** see [docs/TRAINER_NOTES.md](docs/TRAINER_NOTES.md).
+>
+> Tested end to end on macOS (Apple Silicon, Docker Desktop) with GPT-5.5 against live GitHub Actions, Jenkins LTS,
+> Argo CD (stable) and Airflow 3.3: Labs A, B, C and C2. Claude support uses the same loop. Windows/WSL and Linux follow
+> the same steps but have not been rehearsed yet.
+
 This is the real version of the Module 6 labs. Nothing here is mocked. The agent reads and acts on
 **live systems** through their REST APIs:
 

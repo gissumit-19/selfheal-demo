@@ -45,6 +45,14 @@
 - Prompt injection: logs are treated as untrusted data in the system prompt. Even if the model obeys an injected
   instruction, the guard's allow-list stops it.
 
+## Observed in the first live run (macOS, GPT-5.5)
+- `./infra/up.sh` with images already cached: about 3 minutes. On a fresh machine, expect 10 to 20 minutes.
+- Failures appear about 1 minute after each scenario. Each agent incident takes 20 to 60 seconds plus validation
+  (a GitHub re-run is about 1 minute, a Jenkins rebuild about 20 seconds).
+- Lab C: rollback, then Airflow clear, both validated. Jenkins was escalated once rather than rebuilt (see the guide).
+  The prompt now shows the model the agent's recent actions, which should make the rebuild the usual outcome.
+- Issues the agent opens collect in the learner's repo: they are part of the evidence, close them after class.
+
 ## Known limits (as of the first version)
 - Approvals are at the terminal (or `AUTO_APPROVE`). Slack/Teams approval is one function in `heal/approval.py`.
 - Memory is local SQLite per machine. A team setup would use a shared database.
