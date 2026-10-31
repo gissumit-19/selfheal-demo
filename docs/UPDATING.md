@@ -9,12 +9,16 @@ gh repo sync <you>/selfheal-demo --source pravinmenghani1/selfheal-demo --force
 ```
 No gh? On your fork's GitHub page click **Sync fork > Update branch** (choose **Discard commits** if asked).
 
-**2. Update your clone.** The middle command re-checks out every file, which also fixes Windows line endings:
+**2. Update your clone.** Run all four, in this order. The last two re-check out every file, which also fixes
+Windows line endings:
 ```
 git fetch origin
+git reset --hard origin/main
 git rm -r -q --cached .
 git reset --hard origin/main
 ```
+Check: `git log --oneline -1` shows the newest commit from the repo page, and `infra/` contains `preflight.py`
+(no `.sh` files).
 
 **3. Turn on Actions and Issues for your fork.** GitHub switches both off on new forks:
 - Actions: open `https://github.com/<you>/selfheal-demo/actions` and click **I understand my workflows, go ahead and enable them**.
