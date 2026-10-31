@@ -17,7 +17,7 @@ spec:
           command: ["python", "/app/app.py"]
           env:
             - name: APP_VERSION
-              value: "1.0.0"
+              value: "1.1.0"
           ports:
             - containerPort: 8000
           readinessProbe:
