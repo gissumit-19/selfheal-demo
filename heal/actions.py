@@ -34,7 +34,8 @@ def validate(action: str, p: dict, state: dict, ctx) -> tuple[bool, str]:
             if pr["healthy"]:
                 break
             time.sleep(5)
-        return pr["healthy"], (f"Argo CD {app['health']}/{app['sync']} rev {app['revision']}; service {pr.get('version')} "
+        return pr["healthy"], (f"Argo CD {app['health']}, deployed rev {app['deployed_revision']} (git main {app['revision']}, "
+                               f"{app['sync']}); service {pr.get('version')} "
                                f"errors {pr.get('error_rate_pct')}% p95 {pr.get('p95_ms')} ms")
     if action == "airflow_clear_failed":
         state_ = ctx.airflow.wait_for_run(p["dag_run_id"], t)

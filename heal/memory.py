@@ -39,6 +39,12 @@ class Memory:
         hits = [r for r in rows if len(want & _words(r[0])) >= max(1, min(2, len(want)))]
         return [dict(zip(("signature", "source", "action", "outcome", "incident", "ts"), r)) for r in hits[:limit]]
 
+    def recent(self, minutes: int = 180) -> list[dict]:
+        """What the agent itself did recently, so a later incident can see that an earlier fix landed."""
+        rows = self.db.execute("SELECT signature, source, action, outcome, incident, ts FROM history "
+                               "WHERE datetime(ts) >= datetime('now', ?) ORDER BY ts", (f"-{minutes} minutes",)).fetchall()
+        return [dict(zip(("signature", "source", "action", "outcome", "incident", "ts"), r)) for r in rows]
+
     def resolved_count(self, signature: str, action: str) -> int:
         return sum(1 for h in self.similar(signature, 100) if h["action"] == action and h["outcome"] == "resolved")
 

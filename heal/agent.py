@@ -34,6 +34,9 @@ Rules:
 - A policy guard re-checks every precondition against the live systems, and medium-risk actions need a
   human. Don't argue around it; if you are unsure, escalate.
 - For argocd_rollback, history_id is the id of the PREVIOUS history entry in argocd_get_app.
+- Separate the CAUSE from the VICTIM. If a smoke/integration stage or a DAG task failed only because a
+  dependency was broken, and the dependency is healthy NOW (probe_service), the failed run is a victim:
+  propose the rebuild/clear. The bad code itself is tracked by its own incident (see recent agent actions).
 
 Runbook:
 {runbook_text()}"""
@@ -165,10 +168,11 @@ class LLM:
 
 
 # --------------------------------------------------------------------------- the loop
-def investigate(llm: LLM, inc: Incident, tools: list[Tool], max_turns: int = 16) -> dict:
+def investigate(llm: LLM, inc: Incident, tools: list[Tool], recent: list[dict] | None = None, max_turns: int = 16) -> dict:
     chat = llm.chat([t.schema() for t in tools] + [RCA_TOOL()])
     chat.user(f"Incident {inc.key} from {inc.source}: {inc.title}\nURL: {inc.url or 'n/a'}\n"
-              f"Detector evidence:\n{inc.evidence}\nFacts: {json.dumps(inc.facts, default=str)}")
+              f"Detector evidence:\n{inc.evidence}\nFacts: {json.dumps(inc.facts, default=str)}\n"
+              f"Recent agent actions (last 3h, oldest first): {json.dumps(recent or [], default=str)}")
     nudged = False
     for turn in range(1, max_turns + 1):
         try:

@@ -31,7 +31,7 @@ def handle(ctx, llm: LLM, inc: Incident, execute: bool) -> str:
     say("recall", f"{len(past)} similar past incident(s)" + (f", last: {past[0]['action']} -> {past[0]['outcome']}" if past else ""))
 
     say("investigate", "model is reading logs and state ...")
-    rca = investigate(llm, inc, build_tools(ctx))
+    rca = investigate(llm, inc, build_tools(ctx), mem.recent())
     action, params, sig = rca["proposed_action"], rca["params"], rca["signature"]
     mem.audit(inc.key, "analyze", **rca)
     say("analyze", f"[{rca['category']}] {rca['root_cause']}")

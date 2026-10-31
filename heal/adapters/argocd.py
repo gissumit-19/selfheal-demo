@@ -40,6 +40,7 @@ class ArgoCD:
         op = st.get("operationState", {})
         return {"app": self.app_name, "health": st.get("health", {}).get("status"),
                 "sync": st.get("sync", {}).get("status"), "revision": st.get("sync", {}).get("revision", "")[:7],
+                "deployed_revision": history[-1]["revision"] if history else "",
                 "operation": op.get("phase"), "operation_message": op.get("message", "")[:200],
                 "auto_sync": bool(a.get("spec", {}).get("syncPolicy", {}).get("automated")),
                 "history": history}
