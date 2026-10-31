@@ -82,6 +82,13 @@ def main() -> int:
             ok(f"{tool}: {v.splitlines()[0][:60] if v else 'installed'}")
         else:
             bad(f"{tool} not found: install {how} (guide step 1), then open a NEW terminal")
+    if has("git"):
+        name, email = out("git", "config", "user.name"), out("git", "config", "user.email")
+        if name and email:
+            ok(f"git identity: {name} <{email}>")
+        else:
+            bad('git has no name/email (the scenarios make commits): git config --global user.name "Your Name" '
+                '; git config --global user.email "you@example.com"')
     if has("gh"):
         ok(f"gh: {out('gh', '--version').splitlines()[0]}")
     else:

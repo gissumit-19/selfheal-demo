@@ -89,10 +89,14 @@ Check: `docker run --rm hello-world` prints "Hello from Docker!".
 
 ## 2. Log in to GitHub
 
-```bash
-gh auth login          # GitHub.com > HTTPS > "Login with a web browser"
-gh auth setup-git      # lets `git push` use the same login
 ```
+gh auth login
+gh auth setup-git
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+```
+At `gh auth login` choose **GitHub.com > HTTPS > Login with a web browser**. `gh auth setup-git` lets `git push` use
+that login. The last two lines give git your name for the commits the lab scenarios make (use your GitHub email).
 
 **No gh?** Create a fine-grained token (GitHub > Settings > Developer settings > Fine-grained tokens), limited to
 your demo repo, with permissions **Actions: read/write, Contents: read/write, Issues: read/write, Metadata: read**.
@@ -192,10 +196,8 @@ python scenarios.py flaky
 ```
 Wait until GitHub (Actions tab, workflow **ci**, the dispatched run) and Jenkins (`traffic-api-ci`) are both red
 (1 to 2 minutes). Then:
-```bash
-python -m heal scan              # dry run
-python -m heal scan --execute
-```
+1. Dry run first (investigates and shows what it would do, changes nothing): `python -m heal scan`
+2. Then for real: `python -m heal scan --execute`
 **Expect:** for both incidents, `[decide] AUTO: ... commit changed no code ...`. The agent re-runs the failed GitHub
 jobs and rebuilds Jenkins, waits for them, then shows `FIXED`.
 **Discuss:** which facts did the guard check itself? Look for the run attempt counter and the commit's files. Why is
@@ -256,11 +258,9 @@ with `python scenarios.py flaky` and watch the Actions tab. Turn it off again (`
 or the local agent and the Actions agent will both handle the same GitHub failures.
 
 ### Reset and clean up
-```bash
-python scenarios.py reset        # back to 1.0.0, between labs
-python infra/down.py                  # at the end: deletes the cluster, containers and volumes
-docker system prune -a           # optional: frees the disk space used by the images
-```
+- Between labs, back to 1.0.0: `python scenarios.py reset`
+- At the end, delete the cluster, containers and volumes: `python infra/down.py`
+- Optional, free the disk space used by the images: `docker system prune -a`
 
 ---
 

@@ -55,16 +55,15 @@ detect (all systems) -> recall memory -> investigate (Claude + read-only tools) 
 expected output, the labs, troubleshooting). Trainers: [docs/TRAINER_NOTES.md](docs/TRAINER_NOTES.md).
 
 Short version:
-```bash
-cp .env.example .env                 # ANTHROPIC_API_KEY or OPENAI_API_KEY, GITHUB_REPO, JENKINS_TOKEN
-python -m venv .venv                 # macOS/Linux: python3
-. .venv/bin/activate                 # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-gh repo create <you>/selfheal-demo --public --source . --push   # after git init + first commit
-python infra/preflight.py                 # checks tools, Docker memory, ports, keys, repo; changes nothing
-python infra/up.py                        # kind + Argo CD + Jenkins + Airflow (only the kind-heal-demo context)
-python scenarios.py bootstrap && python -m heal doctor
-```
+1. Copy the settings file: `cp .env.example .env` (Windows CMD: `copy .env.example .env`). Fill in one model key
+   (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`), `GITHUB_REPO` and `JENKINS_TOKEN`.
+2. Create and activate a virtual environment, then install the packages:
+   - macOS/Linux: `python3 -m venv .venv`, then `. .venv/bin/activate`
+   - Windows PowerShell: `py -m venv .venv`, then `.venv\Scripts\Activate.ps1`
+   - then everywhere: `pip install -r requirements.txt`
+3. Check the machine (changes nothing): `python infra/preflight.py`
+4. Bring up kind + Argo CD + Jenkins + Airflow: `python infra/up.py`
+5. First deploy, then check every connection: `python scenarios.py bootstrap`, then `python -m heal doctor`
 
 UIs: Argo CD https://localhost:30443 · Jenkins http://localhost:8081 · Airflow http://localhost:8082 ·
 traffic-api http://localhost:30080/healthz
@@ -74,10 +73,9 @@ traffic-api http://localhost:30080/healthz
 Run a scenario, wait for the failures to show up in the UIs, then run the agent. Do a dry run first,
 then `--execute`.
 
-```bash
-python -m heal scan               # dry run: investigates, shows the guard verdicts, changes nothing
-python -m heal scan --execute     # acts; asks you before medium-risk actions (AUTO_APPROVE=yes|no for unattended)
-```
+- Dry run (investigates, shows the guard verdicts, changes nothing): `python -m heal scan`
+- For real (asks you before medium-risk actions): `python -m heal scan --execute`
+- Unattended runs: set `AUTO_APPROVE=yes` or `AUTO_APPROVE=no` in `.env`.
 
 | Scenario | What really happens | Expected agent outcome |
 |---|---|---|

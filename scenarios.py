@@ -36,17 +36,17 @@ def git(*args: str) -> str:
 
 
 def replace(path: Path, old: str, new: str) -> None:
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     if old not in text:
         raise SystemExit(f"{path.name}: expected text not found (already applied? run `python scenarios.py reset`)")
-    path.write_text(text.replace(old, new, 1))
+    path.write_text(text.replace(old, new, 1), encoding="utf-8", newline="\n")
 
 
 def set_version(v: str) -> None:
-    lines = DEPLOY.read_text().splitlines(keepends=True)
+    lines = DEPLOY.read_text(encoding="utf-8").splitlines(keepends=True)
     i = next(n for n, l in enumerate(lines) if "name: APP_VERSION" in l)
     lines[i + 1] = lines[i + 1].split("value:")[0] + f'value: "{v}"\n'
-    DEPLOY.write_text("".join(lines))
+    DEPLOY.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
 def commit_push(msg: str, branch: str = "main") -> None:
@@ -98,7 +98,7 @@ def main(cmd: str) -> None:
     elif cmd == "flaky":
         git("checkout", "main")
         git("pull", "--ff-only", "origin", "main")
-        with (ROOT / "docs" / "CHANGELOG.md").open("a") as f:
+        with (ROOT / "docs" / "CHANGELOG.md").open("a", encoding="utf-8", newline="\n") as f:
             f.write(f"- docs touch-up {time.strftime('%Y-%m-%d %H:%M')}\n")
         commit_push("docs: update changelog")
         time.sleep(5)
@@ -124,8 +124,8 @@ def main(cmd: str) -> None:
     elif cmd == "reset":
         git("checkout", "main")
         git("pull", "--ff-only", "origin", "main")
-        text = APP.read_text().replace(BAD_BULK, GOOD_BULK).replace(BAD_MPS, GOOD_MPS)
-        APP.write_text(text)
+        text = APP.read_text(encoding="utf-8").replace(BAD_BULK, GOOD_BULK).replace(BAD_MPS, GOOD_MPS)
+        APP.write_text(text, encoding="utf-8", newline="\n")
         set_version("1.0.0")
         if git("status", "--porcelain", "service"):
             commit_push("fix: restore traffic-api 1.0.0 bulk_get")

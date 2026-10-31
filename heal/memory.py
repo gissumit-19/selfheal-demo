@@ -70,5 +70,5 @@ class Memory:
 
     # -------- audit --------
     def audit(self, incident: str, step: str, **detail) -> None:
-        with self.audit_path.open("a") as f:
+        with self.audit_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": now(), "incident": incident, "step": step, **detail}, default=str) + "\n")

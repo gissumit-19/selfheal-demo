@@ -15,7 +15,7 @@ from typing import Callable
 
 import yaml
 
-RUNBOOK: dict = yaml.safe_load((Path(__file__).parent / "runbook.yaml").read_text())["actions"]
+RUNBOOK: dict = yaml.safe_load((Path(__file__).parent / "runbook.yaml").read_text(encoding="utf-8"))["actions"]
 
 CODE_EXT = (".py", ".js", ".ts", ".go", ".java", ".kt", ".rb", ".rs", ".cs", ".groovy", ".scala", ".sh")
 CODE_FILES = ("Jenkinsfile", "Dockerfile", "requirements.txt", "package.json", "go.mod", "pom.xml")
