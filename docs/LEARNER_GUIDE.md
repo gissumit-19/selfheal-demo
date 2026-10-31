@@ -23,67 +23,52 @@ You need: Docker, kind, kubectl, git, gh (GitHub CLI), Python 3.11+, curl.
    Settings > Resources > Memory: **at least 6 GB**.
 2. `brew install kind kubectl gh git python@3.12`
 
-### Windows 10/11 (WSL2)
+### Windows 10/11 (PowerShell, no WSL needed)
 
-Everything runs in the **Ubuntu terminal (WSL2)**, not PowerShell or CMD. Only steps W1 to W3 use Windows itself.
+Every command in this guide runs in a normal **PowerShell** window. All the scripts are Python, so there is nothing
+to run in bash.
 
-**W1. Install WSL2 + Ubuntu.** In **PowerShell as Administrator**:
+**W1. Install the tools** with winget (built into Windows 10/11). In PowerShell:
 ```powershell
-wsl --install -d Ubuntu-24.04
+winget install -e --id Docker.DockerDesktop
+winget install -e --id Git.Git
+winget install -e --id Python.Python.3.12
+winget install -e --id Kubernetes.kind
+winget install -e --id Kubernetes.kubectl
+winget install -e --id GitHub.cli
 ```
-Reboot, open **Ubuntu** from the Start menu, and create a Linux user name and password when asked.
-Already have WSL? Check in PowerShell with `wsl -l -v`: the VERSION column must be **2**, and
-`wsl --set-version <name> 2` converts an old one.
+**Close PowerShell and open a new one**, so the new tools are on your PATH. Then check:
+```powershell
+git --version; py --version; kind version; kubectl version --client; gh --version
+```
+No winget? Install each tool from its website with the default options, and tick "Add python.exe to PATH" for Python.
 
-**W2. Give WSL enough memory.** In Windows, create the file `%UserProfile%\.wslconfig` (e.g. `C:\Users\you\.wslconfig`)
-with Notepad:
+**W2. Start Docker Desktop** from the Start menu and wait for "Engine running". If it asks to install or update WSL,
+accept: Docker Desktop runs its engine on WSL 2. You don't use WSL yourself.
+Check in PowerShell: `docker run --rm hello-world` must print "Hello from Docker!".
+
+**W3. Give Docker enough memory.** Docker Desktop on WSL 2 has no memory slider. Instead, create the file
+`%UserProfile%\.wslconfig` (e.g. `notepad $env:USERPROFILE\.wslconfig`) containing:
 ```ini
 [wsl2]
 memory=8GB
 ```
-Then run `wsl --shutdown` in PowerShell. With the WSL 2 engine, Docker Desktop takes its memory from this file
-(there is no memory slider in Docker Desktop in this mode). Use `memory=6GB` if the laptop has only 8 GB.
+Save it, run `wsl --shutdown`, then start Docker Desktop again. Use `memory=6GB` on an 8 GB laptop.
 
-**W3. Install Docker Desktop for Windows** (docker.com/products/docker-desktop) and start it. Then:
-- Settings > General: **Use the WSL 2 based engine** is ticked.
-- Settings > Resources > WSL integration: switch **Ubuntu-24.04** on, then Apply & restart.
-- Do **not** also install Docker Engine inside Ubuntu.
+**W4. Use a short folder path without spaces**, e.g. `C:\labs`. Open PowerShell there (`mkdir C:\labs; cd C:\labs`)
+before cloning in step 3.
 
-**W4. In the Ubuntu terminal**, check Docker and install the tools:
-```bash
-docker run --rm hello-world                      # must print "Hello from Docker!"
-sudo apt update && sudo apt install -y git curl unzip python3 python3-venv python3-pip
-python3 --version                                # must be 3.11 or newer (Ubuntu 24.04 has 3.12)
-ARCH=$(dpkg --print-architecture)
-curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-$ARCH
-chmod +x kind && sudo mv kind /usr/local/bin/
-curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/$ARCH/kubectl"
-chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-(type -p wget >/dev/null || sudo apt install -y wget) && sudo mkdir -p -m 755 /etc/apt/keyrings \
-  && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null \
-  && echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null && sudo apt update && sudo apt install -y gh
-git config --global core.autocrlf input
-```
-- If `docker` says "command not found" or "cannot connect", the WSL integration in W3 is off, or Docker Desktop isn't running.
-- If you are on Ubuntu 22.04 (Python 3.10), install Ubuntu 24.04 with W1 instead. It is the quickest fix.
+**W5. Continue with step 2.** Use `py` where the guide says `python3` (only until the venv is active), and open the
+demo UIs in your normal browser.
 
-**W5. Work inside the Linux file system.** Always `cd ~` before cloning (`~/selfheal-demo`), **never** `/mnt/c/...`:
-it is much faster, and the scripts keep Linux line endings.
-
-**W6. Browsers and logins.**
-- Open the demo UIs (`http://localhost:8081`, `https://localhost:30443`, ...) in your normal **Windows** browser.
-  Docker Desktop forwards the ports.
-- At `gh auth login`, if no browser opens, copy the one-time code it prints, then open https://github.com/login/device
-  in Windows and paste it.
-
-**W7. Continue with step 2** below. Skip the Linux section: W4 already installed everything.
+*(Prefer WSL? That works too: install Ubuntu with `wsl --install -d Ubuntu-24.04`, enable Docker Desktop >
+Settings > Resources > WSL integration, follow the Linux steps inside Ubuntu, and clone under `~`, not `/mnt/c`.)*
 
 **Windows troubleshooting**
-- **VPN or corporate antivirus** can break WSL networking (downloads hang, `curl` times out). Try without the VPN, or
-  ask IT to allow WSL.
-- Docker is slow or stuck after a laptop sleep: quit Docker Desktop, run `wsl --shutdown`, and start Docker Desktop again.
-- `bad interpreter: /bin/bash^M`: the repo was cloned from Windows. Delete it and clone again inside Ubuntu (W5).
+- `winget` is not recognized: update "App Installer" from the Microsoft Store, or install the tools from their websites.
+- A tool "is not recognized" right after installing: open a **new** PowerShell window.
+- **VPN or corporate antivirus** can block Docker downloads. Try without the VPN, or ask IT to allow Docker Desktop.
+- Docker stuck after the laptop sleeps: quit Docker Desktop, run `wsl --shutdown`, and start it again.
 
 ### Linux (Ubuntu/Debian)
 ```bash
@@ -97,7 +82,7 @@ chmod +x kind && sudo mv kind /usr/local/bin/
 # kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/$ARCH/kubectl"
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-# GitHub CLI: https://github.com/cli/cli/blob/trunk/docs/install_linux.md (or the same commands as Windows step W4)
+# GitHub CLI: https://github.com/cli/cli/blob/trunk/docs/install_linux.md
 ```
 
 Check: `docker run --rm hello-world` prints "Hello from Docker!".
@@ -142,24 +127,32 @@ Edit `.env` and set at least:
 - `GITHUB_REPO=<your-user>/selfheal-demo`
 - `JENKINS_TOKEN=` any password you like (it becomes the Jenkins admin password)
 
-Then install the Python packages:
-```bash
-python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
-```
-Run `. .venv/bin/activate` again in every new terminal.
+Then install the Python packages into a virtual environment:
+
+| | macOS / Linux / WSL | Windows (PowerShell) |
+|---|---|---|
+| create | `python3 -m venv .venv` | `py -m venv .venv` |
+| activate | `. .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
+| install | `pip install -r requirements.txt` | `pip install -r requirements.txt` |
+
+Activate again in **every new terminal**. Your prompt then starts with `(.venv)`, and `python` means the right Python on
+every OS. Windows: if activation says "running scripts is disabled", run this once and try again:
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+
+Every command from here on is identical on Windows, macOS and Linux.
 
 ## 5. Preflight check (changes nothing)
 
 ```bash
-./infra/preflight.sh
+python infra/preflight.py
 ```
 It checks tools, Docker memory, free ports, `.env`, the API key (with a free call), your GitHub repo and token, and
-the Python packages. Fix every `[FAIL]` line and run it again until it ends with **`Ready: ./infra/up.sh`**.
+the Python packages. Fix every `[FAIL]` line and run it again until it ends with **`Ready: python infra/up.py`**.
 
 ## 6. Bring up the systems (10 to 20 minutes the first time)
 
 ```bash
-./infra/up.sh
+python infra/up.py
 ```
 It creates the kind cluster, installs Argo CD, points Argo CD at your repo, and builds and starts Jenkins and Airflow.
 The Jenkins image build is the slow part. It ends with:
@@ -259,7 +252,7 @@ or the local agent and the Actions agent will both handle the same GitHub failur
 ### Reset and clean up
 ```bash
 python scenarios.py reset        # back to 1.0.0, between labs
-./infra/down.sh                  # at the end: deletes the cluster, containers and volumes
+python infra/down.py                  # at the end: deletes the cluster, containers and volumes
 docker system prune -a           # optional: frees the disk space used by the images
 ```
 
@@ -271,16 +264,16 @@ docker system prune -a           # optional: frees the disk space used by the im
 |---|---|
 | preflight: `port 8081/8082 is taken` | Change `JENKINS_PORT` + `JENKINS_URL` (or `AIRFLOW_PORT` + `AIRFLOW_URL`) in `.env` to a free port, e.g. 8091. |
 | preflight: `port 30080/30443 is taken` | Another kind/minikube cluster is using it. Stop it (`kind get clusters`, `minikube stop`). |
-| `up.sh` stuck at "waiting for Jenkins" | `docker logs heal-demo-jenkins-1`. A plugin download error is usually network/proxy related: re-run `./infra/up.sh`. |
-| `up.sh` stuck at "waiting for Airflow" | `docker logs heal-demo-airflow-1`. The first start takes 1 to 2 minutes. Docker needs at least 6 GB of memory. |
-| `doctor`: argocd FAIL 401 | `ARGOCD_PASSWORD` in `.env` is stale. Re-run `./infra/up.sh` (it rewrites it). |
+| `up.py` stuck at "waiting for Jenkins" | `docker logs heal-demo-jenkins-1`. A plugin download error is usually network/proxy related: re-run `python infra/up.py`. |
+| `up.py` stuck at "waiting for Airflow" | `docker logs heal-demo-airflow-1`. The first start takes 1 to 2 minutes. Docker needs at least 6 GB of memory. |
+| `doctor`: argocd FAIL 401 | `ARGOCD_PASSWORD` in `.env` is stale. Re-run `python infra/up.py` (it rewrites it). |
 | `doctor`: service UNHEALTHY / unreachable right after setup | Run `python scenarios.py bootstrap` (the first sync). Check `kubectl --context kind-heal-demo -n traffic get pods`. |
-| Argo CD app shows "repository not found" | The repo is private, or `GITHUB_REPO` is wrong. Make it public, then re-run `./infra/up.sh`. |
+| Argo CD app shows "repository not found" | The repo is private, or `GITHUB_REPO` is wrong. Make it public, then re-run `python infra/up.py`. |
 | Jenkins build fails at "Checkout SCM" | Same as above (Jenkins clones your public repo). |
 | `git push` asks for a password | Run `gh auth setup-git`, or paste your fine-grained token as the password. |
 | Airflow `publish_traffic_api` fails with "connection refused" | traffic-api is not running: `python scenarios.py bootstrap`. On Linux, Docker must support `host-gateway` (Docker 20.10+). |
 | `Error 400 ... fallbacks` from the model | Your account does not support the fallback beta. Set `CLAUDE_FALLBACKS=0` in `.env`. |
-| `Error 401` from the model | Wrong or revoked key (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`). Check with `./infra/preflight.sh`. A key exported in your shell wins over `.env`. |
+| `Error 401` from the model | Wrong or revoked key (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`). Check with `python infra/preflight.py`. A key exported in your shell wins over `.env`. |
 | OpenAI `400 ... Function tools with reasoning_effort are not supported ... in /v1/chat/completions` | Keep `OPENAI_API_STYLE=responses` (the default). Only use `chat` for servers without the Responses API, and then leave `OPENAI_REASONING_EFFORT` empty. |
 | scenario says "expected text not found" | A previous scenario is still applied: `python scenarios.py reset`. |
 | Windows: `bad interpreter: /bin/bash^M` | The files got Windows line endings. Work inside WSL (`~/...`) and run `git config --global core.autocrlf input`, then clone again. |

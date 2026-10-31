@@ -1,0 +1,4 @@
+# Keep Linux line endings everywhere, even when cloned on Windows: these files run inside
+# Linux containers (Jenkins, Airflow, kind) and CRLF would break them.
+* text=auto eol=lf
+*.png binary

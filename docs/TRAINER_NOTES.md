@@ -2,13 +2,13 @@
 
 ## Before the class
 1. **Rehearse the whole thing once on a clean machine** (ideally one Mac and one Windows/WSL laptop): every step of
-   `LEARNER_GUIDE.md`, all labs, then `down.sh`. Note your own timings.
+   `LEARNER_GUIDE.md`, all labs, then `down.py`. Note your own timings.
 2. **Publish the code as a GitHub template repo** (repo Settings > "Template repository"), and share the link. Learners
    then get their own public copy in one click (guide step 3, option A). Never push your `.env`: it is gitignored.
-3. **Send the prerequisites a few days early:** step 0 and step 1 of the guide, plus "run `./infra/preflight.sh` and
+3. **Send the prerequisites a few days early:** step 0 and step 1 of the guide, plus "run `python infra/preflight.py` and
    send me a screenshot". Most class-time problems are Docker memory, WSL setup and corporate proxies.
-4. **Bandwidth:** each learner downloads about 3 GB. On shared Wi-Fi, ask learners to run `./infra/up.sh` the day before.
-   Or run `./infra/prepull.sh` at home and keep the stack between days. `down.sh` deletes it, so don't run that until
+4. **Bandwidth:** each learner downloads about 3 GB. On shared Wi-Fi, ask learners to run `python infra/up.py` the day before.
+   Or run `python infra/prepull.py` at home and keep the stack between days. `down.py` deletes it, so don't run that until
    the end.
 5. **API keys:** learners can use Anthropic **or** OpenAI keys (`LLM_PROVIDER`). Running half the class on each is a
    good discussion: the guard's verdicts are the same whichever model proposes. One key per learner is simplest. If you share one org key, check its rate limits: about 30 learners
@@ -46,7 +46,7 @@
   instruction, the guard's allow-list stops it.
 
 ## Observed in the first live run (macOS, GPT-5.5)
-- `./infra/up.sh` with images already cached: about 3 minutes. On a fresh machine, expect 10 to 20 minutes.
+- `python infra/up.py` with images already cached: about 3 minutes. On a fresh machine, expect 10 to 20 minutes.
 - Failures appear about 1 minute after each scenario. Each agent incident takes 20 to 60 seconds plus validation
   (a GitHub re-run is about 1 minute, a Jenkins rebuild about 20 seconds).
 - Lab C: rollback, then Airflow clear, both validated. Jenkins was escalated once rather than rebuilt (see the guide).

@@ -57,10 +57,12 @@ expected output, the labs, troubleshooting). Trainers: [docs/TRAINER_NOTES.md](d
 Short version:
 ```bash
 cp .env.example .env                 # ANTHROPIC_API_KEY or OPENAI_API_KEY, GITHUB_REPO, JENKINS_TOKEN
-python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+python -m venv .venv                 # macOS/Linux: python3
+. .venv/bin/activate                 # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 gh repo create <you>/selfheal-demo --public --source . --push   # after git init + first commit
-./infra/preflight.sh                 # checks tools, Docker memory, ports, keys, repo; changes nothing
-./infra/up.sh                        # kind + Argo CD + Jenkins + Airflow (only the kind-heal-demo context)
+python infra/preflight.py                 # checks tools, Docker memory, ports, keys, repo; changes nothing
+python infra/up.py                        # kind + Argo CD + Jenkins + Airflow (only the kind-heal-demo context)
 python scenarios.py bootstrap && python -m heal doctor
 ```
 
@@ -85,7 +87,7 @@ python -m heal scan --execute     # acts; asks you before medium-risk actions (A
 | run `bad-deploy` and answer **n** | same | everything **escalates**. With the dependency still broken, the guard refuses the rebuild and clear: no working around a human "no". |
 | run `flaky` and `scan --execute` twice | the second run has nothing new | already-processed incidents are skipped; memory now shows the re-run fixed that signature |
 
-Reset between demos: `python scenarios.py reset`. Tear down everything: `./infra/down.sh`.
+Reset between demos: `python scenarios.py reset`. Tear down everything: `python infra/down.py`.
 
 ## Using it in a pipeline
 
@@ -123,7 +125,7 @@ heal/                    the agent
 service/                 traffic-api (app, tests, smoke check, k8s manifests Argo CD deploys)
 jenkins/                 Jenkins image, JCasC, Jenkinsfile
 airflow/dags/            traffic_probe_daily
-infra/                   kind config, Argo CD Application, compose, up.sh / down.sh
+infra/                   kind config, Argo CD Application, compose; preflight.py, up.py, down.py, prepull.py (run on any OS)
 .github/workflows/       ci.yml (the pipeline), heal.yml (in-pipeline self-healing)
 scenarios.py             cause real failures
 tests/                   offline contract tests for the guard and workflow
