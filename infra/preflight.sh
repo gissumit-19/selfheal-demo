@@ -10,6 +10,7 @@ has()  { command -v "$1" >/dev/null 2>&1; }
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && { exec 3>&-; return 0; }; return 1; }
 
 echo "== tools"
+case "$PWD" in /mnt/[a-z]/*) bad "this folder is on the Windows drive ($PWD): clone it inside WSL under ~ instead (guide step W5)";; esac
 for t in git curl docker kind kubectl python3; do
   if has "$t"; then
     v=$($t --version 2>/dev/null | head -1); [ -z "$v" ] && v=$($t version --client 2>/dev/null | head -1)
@@ -26,10 +27,12 @@ if docker info >/dev/null 2>&1; then
   ok "docker daemon running"
   MEM=$(docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0)
   GB=$((MEM / 1024 / 1024 / 1024))
-  [ "$GB" -ge 6 ] && ok "docker memory ${GB} GB" || bad "docker has ${GB} GB memory; give it at least 6 GB (Docker Desktop > Settings > Resources)"
+  if grep -qi microsoft /proc/version 2>/dev/null; then HINT="WSL: set memory=8GB in %UserProfile%\\.wslconfig, then 'wsl --shutdown' (guide step W2)"
+  else HINT="Docker Desktop > Settings > Resources > Memory"; fi
+  [ "$GB" -ge 6 ] && ok "docker memory ${GB} GB" || bad "docker has ${GB} GB memory; give it at least 6 GB ($HINT)"
   [ "$(docker info --format '{{.Architecture}}' 2>/dev/null)" ] && ok "architecture $(docker info --format '{{.Architecture}}') (all images are multi-arch)"
 else
-  bad "docker is not running: start Docker Desktop (or the docker service on Linux)"
+  bad "docker is not running: start Docker Desktop (on WSL also enable Settings > Resources > WSL integration > Ubuntu), or the docker service on Linux"
 fi
 
 echo "== .env"

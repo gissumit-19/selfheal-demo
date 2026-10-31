@@ -23,18 +23,72 @@ You need: Docker, kind, kubectl, git, gh (GitHub CLI), Python 3.11+, curl.
    Settings > Resources > Memory: **at least 6 GB**.
 2. `brew install kind kubectl gh git python@3.12`
 
-### Windows (use WSL2: every command in this guide runs in the Ubuntu terminal, not PowerShell)
-1. In PowerShell as Administrator: `wsl --install -d Ubuntu`, then reboot and open "Ubuntu".
-2. Install **Docker Desktop**. Settings > General: "Use the WSL 2 based engine". Settings > Resources > WSL
-   integration: enable **Ubuntu**. Settings > Resources > Memory: at least 6 GB.
-3. In Ubuntu, follow the Linux steps below (skip installing Docker Engine: Docker Desktop provides it).
-4. Keep the project inside the Linux home folder (`~/selfheal-demo`), **not** under `/mnt/c/...`. It is much faster,
-   and the scripts keep their line endings.
+### Windows 10/11 (WSL2)
 
-### Linux (Ubuntu/Debian; also inside WSL)
+Everything runs in the **Ubuntu terminal (WSL2)**, not PowerShell or CMD. Only steps W1 to W3 use Windows itself.
+
+**W1. Install WSL2 + Ubuntu.** In **PowerShell as Administrator**:
+```powershell
+wsl --install -d Ubuntu-24.04
+```
+Reboot, open **Ubuntu** from the Start menu, and create a Linux user name and password when asked.
+Already have WSL? Check in PowerShell with `wsl -l -v`: the VERSION column must be **2**, and
+`wsl --set-version <name> 2` converts an old one.
+
+**W2. Give WSL enough memory.** In Windows, create the file `%UserProfile%\.wslconfig` (e.g. `C:\Users\you\.wslconfig`)
+with Notepad:
+```ini
+[wsl2]
+memory=8GB
+```
+Then run `wsl --shutdown` in PowerShell. With the WSL 2 engine, Docker Desktop takes its memory from this file
+(there is no memory slider in Docker Desktop in this mode). Use `memory=6GB` if the laptop has only 8 GB.
+
+**W3. Install Docker Desktop for Windows** (docker.com/products/docker-desktop) and start it. Then:
+- Settings > General: **Use the WSL 2 based engine** is ticked.
+- Settings > Resources > WSL integration: switch **Ubuntu-24.04** on, then Apply & restart.
+- Do **not** also install Docker Engine inside Ubuntu.
+
+**W4. In the Ubuntu terminal**, check Docker and install the tools:
+```bash
+docker run --rm hello-world                      # must print "Hello from Docker!"
+sudo apt update && sudo apt install -y git curl unzip python3 python3-venv python3-pip
+python3 --version                                # must be 3.11 or newer (Ubuntu 24.04 has 3.12)
+ARCH=$(dpkg --print-architecture)
+curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-$ARCH
+chmod +x kind && sudo mv kind /usr/local/bin/
+curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/$ARCH/kubectl"
+chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+(type -p wget >/dev/null || sudo apt install -y wget) && sudo mkdir -p -m 755 /etc/apt/keyrings \
+  && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null \
+  && echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null && sudo apt update && sudo apt install -y gh
+git config --global core.autocrlf input
+```
+- If `docker` says "command not found" or "cannot connect", the WSL integration in W3 is off, or Docker Desktop isn't running.
+- If you are on Ubuntu 22.04 (Python 3.10), install Ubuntu 24.04 with W1 instead. It is the quickest fix.
+
+**W5. Work inside the Linux file system.** Always `cd ~` before cloning (`~/selfheal-demo`), **never** `/mnt/c/...`:
+it is much faster, and the scripts keep Linux line endings.
+
+**W6. Browsers and logins.**
+- Open the demo UIs (`http://localhost:8081`, `https://localhost:30443`, ...) in your normal **Windows** browser.
+  Docker Desktop forwards the ports.
+- At `gh auth login`, if no browser opens, copy the one-time code it prints, then open https://github.com/login/device
+  in Windows and paste it.
+
+**W7. Continue with step 2** below. Skip the Linux section: W4 already installed everything.
+
+**Windows troubleshooting**
+- **VPN or corporate antivirus** can break WSL networking (downloads hang, `curl` times out). Try without the VPN, or
+  ask IT to allow WSL.
+- Docker is slow or stuck after a laptop sleep: quit Docker Desktop, run `wsl --shutdown`, and start Docker Desktop again.
+- `bad interpreter: /bin/bash^M`: the repo was cloned from Windows. Delete it and clone again inside Ubuntu (W5).
+
+### Linux (Ubuntu/Debian)
 ```bash
 sudo apt update && sudo apt install -y git curl python3 python3-venv python3-pip
-# Docker Engine (skip on WSL with Docker Desktop): https://docs.docker.com/engine/install/ubuntu/
+# Docker Engine: https://docs.docker.com/engine/install/ubuntu/ , then let your user run docker:
 sudo usermod -aG docker $USER && newgrp docker
 # kind
 ARCH=$(dpkg --print-architecture)    # amd64 or arm64
@@ -43,7 +97,7 @@ chmod +x kind && sudo mv kind /usr/local/bin/
 # kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/$ARCH/kubectl"
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-# GitHub CLI: https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+# GitHub CLI: https://github.com/cli/cli/blob/trunk/docs/install_linux.md (or the same commands as Windows step W4)
 ```
 
 Check: `docker run --rm hello-world` prints "Hello from Docker!".
