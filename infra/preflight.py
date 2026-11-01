@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
 import sys
 import urllib.error
@@ -37,11 +38,38 @@ def port_busy(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
+def key_source(name: str) -> str:
+    return "your shell environment" if os.environ.get(name) else ".env"
+
+
+def chosen_provider(env: dict) -> str:
+    return env.get("LLM_PROVIDER") or ("anthropic" if env.get("ANTHROPIC_API_KEY") else "openai")
+
+
+def provider_text(env: dict) -> str:
+    p = chosen_provider(env)
+    if env.get("LLM_PROVIDER"):
+        return f"provider {p} (LLM_PROVIDER)"
+    key = "ANTHROPIC_API_KEY" if p == "anthropic" else "OPENAI_API_KEY"
+    both = env.get("ANTHROPIC_API_KEY") and env.get("OPENAI_API_KEY")
+    return (f"provider {p} (automatic: {key} is set, from {key_source(key)})"
+            + ("; both keys are set, so set LLM_PROVIDER in .env to choose" if both else ""))
+
+
+def key_hint(provider: str) -> str:
+    key = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
+    other = "openai" if provider == "anthropic" else "anthropic"
+    hint = f"wrong or revoked {key} (taken from {key_source(key)})"
+    if os.environ.get(key):
+        hint += f"; it is exported in your shell, which wins over .env: `unset {key}` (PowerShell: `Remove-Item Env:{key}`)"
+    return hint + f", or use the other provider: LLM_PROVIDER={other} in .env"
+
+
 def sdk_check(env: dict) -> None:
     """Connect the way the agent does (through the model SDK), so proxy/certificate problems show up here."""
     sys.path.insert(0, str(ROOT))
     import heal  # noqa: F401  (switches HTTPS to the OS certificate store, like the agent)
-    provider = env.get("LLM_PROVIDER") or ("anthropic" if env.get("ANTHROPIC_API_KEY") else "openai")
+    provider = chosen_provider(env)
     try:
         if provider == "openai" and env.get("OPENAI_API_KEY"):
             import openai
@@ -61,7 +89,8 @@ def sdk_check(env: dict) -> None:
                 "or set SSL_CERT_FILE to it" if "CERTIFICATE" in why.upper() else
                 "proxy/firewall: set HTTPS_PROXY=http://<proxy>:<port> in .env, or try off the VPN"
                 if any(w in why.lower() for w in ("connect", "timed out", "getaddrinfo", "resolve", "proxy")) else
-                "check the key and OPENAI_BASE_URL in .env")
+                key_hint(provider) if "401" in why or "authentication" in why.lower() else
+                "check the key" + (" and OPENAI_BASE_URL" if provider == "openai" else "") + " in .env")
         bad(f"{provider} SDK cannot connect ({why}) -> {hint}")
 
 
@@ -114,9 +143,8 @@ def main() -> int:
         bad("no .env file: copy .env.example to .env and fill it in (guide step 4)")
     else:
         ok(".env found")
-        provider = env.get("LLM_PROVIDER", "") or "auto"
         if env.get("ANTHROPIC_API_KEY") or env.get("OPENAI_API_KEY"):
-            ok(f"model key set (provider: {provider})")
+            ok(f"model key set: {provider_text(env)}")
         else:
             bad("set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env")
         repo = env.get("GITHUB_REPO", "")
@@ -139,15 +167,15 @@ def main() -> int:
             bad(f"port {port} ({name}) is taken by another program: free it or change the port in .env (guide troubleshooting)")
 
     print("== model API (free models-list call, no tokens used)")
-    p = env.get("LLM_PROVIDER", "")
-    if env.get("ANTHROPIC_API_KEY") and p != "openai":
+    p = chosen_provider(env)
+    if env.get("ANTHROPIC_API_KEY") and p == "anthropic":
         code, _ = http("https://api.anthropic.com/v1/models",
                        {"x-api-key": env["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"})
-        ok("Anthropic key accepted") if code == 200 else bad(f"Anthropic key check: HTTP {code} (401 = wrong key, 0 = no network/proxy)")
-    if env.get("OPENAI_API_KEY") and p != "anthropic":
+        ok("Anthropic key accepted") if code == 200 else bad(f"Anthropic key check: HTTP {code} -> " + (key_hint("anthropic") if code == 401 else "no network/proxy (see the SDK line below)"))
+    if env.get("OPENAI_API_KEY") and p == "openai":
         base = (env.get("OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
         code, _ = http(f"{base}/models", {"Authorization": f"Bearer {env['OPENAI_API_KEY']}"})
-        ok(f"OpenAI key accepted ({base})") if code == 200 else bad(f"OpenAI key check: HTTP {code} (401 = wrong key, 0 = no network/proxy)")
+        ok(f"OpenAI key accepted ({base})") if code == 200 else bad(f"OpenAI key check: HTTP {code} -> " + (key_hint("openai") if code == 401 else "no network/proxy (see the SDK line below)"))
 
     print("== GitHub")
     token = env.get("GITHUB_TOKEN") or (out("gh", "auth", "token") if has("gh") else "")
