@@ -1,45 +1,35 @@
 # Updating your copy to the latest version
 
-Run these in the folder where you cloned the repo. They make your fork and your clone **exactly** match the latest
-version. Your `.env` and `.venv` are kept (git ignores them). Any local edits to tracked files are thrown away.
+## The one command (after the first time)
 
-**1. Update your fork on GitHub** (replace `<you>` with your GitHub user name):
+In the project folder, with the venv active (`(.venv)` in your prompt), on Windows, macOS or Linux:
 ```
-gh repo sync <you>/selfheal-demo --source pravinmenghani1/selfheal-demo --force
+python infra/update.py
 ```
-No gh? On your fork's GitHub page click **Sync fork > Update branch** (choose **Discard commits** if asked).
+It fetches the latest version from the trainer's repo, updates your files, makes your GitHub fork match,
+installs new Python packages, restarts only the containers whose setup changed, and runs the preflight check.
+Your `.env`, `.venv` and `runtime/` are kept. If you edited any lab files, it lists them and asks before
+discarding them.
 
-**2. Update your clone.** Run all four, in this order. The last two re-check out every file, which also fixes
-Windows line endings:
-```
-git fetch origin
-git reset --hard origin/main
-git rm -r -q --cached .
-git reset --hard origin/main
-```
-Check: `git log --oneline -1` shows the newest commit from the repo page, and `infra/` contains `preflight.py`
-(no `.sh` files).
+The agent also tells you when a newer version exists: `python -m heal ...` then prints
+`A newer version of the lab is available: run python infra/update.py`.
 
-**3. Turn on Actions and Issues for your fork.** GitHub switches both off on new forks:
+## The first time only (if `infra/update.py` doesn't exist in your copy yet)
+
+Run these three lines once, then use the one command above from then on:
+```
+git fetch https://github.com/pravinmenghani1/selfheal-demo.git main
+git checkout FETCH_HEAD -- infra/update.py infra/_common.py
+python infra/update.py
+```
+
+## Also, once per fork
+
+GitHub switches these off on new forks; `preflight` tells you if they are still off:
 - Actions: open `https://github.com/<you>/selfheal-demo/actions` and click **I understand my workflows, go ahead and enable them**.
 - Issues: `gh repo edit <you>/selfheal-demo --enable-issues` (or Settings > General > Features > tick **Issues**).
 
-**4. Refresh the Python packages and check everything:**
+## Options
 
-| macOS / Linux | Windows (PowerShell) |
-|---|---|
-| `python3 -m venv .venv` (only if you have no `.venv` yet) | `py -m venv .venv` (only if you have no `.venv` yet) |
-| `. .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
-| `pip install -r requirements.txt` | `pip install -r requirements.txt` |
-| `python infra/preflight.py` | `python infra/preflight.py` |
-
-Fix any `[FAIL]` lines. In particular, `GITHUB_REPO` in `.env` must be **your** fork (`<you>/selfheal-demo`).
-
-**5. Apply the update to the running systems.** Always run this after updating, even if everything was already up.
-It recreates any container whose settings changed (your cluster and data are kept):
-```
-python infra/up.py
-```
-Then `python scenarios.py bootstrap`.
-The old `up.sh` may have switched your kubectl context to `kind-heal-demo`. Check with
-`kubectl config current-context`, and switch back with `kubectl config use-context <your-old-context>` if you use other clusters.
+- `python infra/update.py --yes` updates without asking (it still discards local edits to lab files).
+- `python infra/update.py --no-up` leaves the running containers alone.

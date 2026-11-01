@@ -123,7 +123,7 @@ heal/                    the agent
 service/                 traffic-api (app, tests, smoke check, k8s manifests Argo CD deploys)
 jenkins/                 Jenkins image, JCasC, Jenkinsfile
 airflow/dags/            traffic_probe_daily
-infra/                   kind config, Argo CD Application, compose; preflight.py, up.py, down.py, prepull.py (run on any OS)
+infra/                   kind config, Argo CD Application, compose; preflight.py, up.py, down.py, update.py, netcheck.py, prepull.py (any OS)
 .github/workflows/       ci.yml (the pipeline), heal.yml (in-pipeline self-healing)
 scenarios.py             cause real failures
 tests/                   offline contract tests for the guard and workflow

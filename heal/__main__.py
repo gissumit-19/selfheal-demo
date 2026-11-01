@@ -18,6 +18,27 @@ from heal.config import SETTINGS
 from heal.context import build_context
 
 
+import os as _os
+UPSTREAM = _os.getenv("HEAL_UPSTREAM", "https://github.com/pravinmenghani1/selfheal-demo.git")
+
+
+def update_notice() -> str:
+    """One quick check: is there a newer version of the lab? Never fails the run."""
+    import subprocess
+    from heal.config import ROOT
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=5).stdout.strip()
+        latest = subprocess.run(["git", "ls-remote", UPSTREAM, "refs/heads/main"], cwd=ROOT, capture_output=True,
+                                text=True, timeout=8).stdout.split()[:1]
+        known = subprocess.run(["git", "cat-file", "-e", f"{latest[0]}^{{commit}}"], cwd=ROOT, capture_output=True,
+                               timeout=5).returncode == 0 if latest else True
+        behind = latest and latest[0] != head and not (known and subprocess.run(
+            ["git", "merge-base", "--is-ancestor", latest[0], head], cwd=ROOT, capture_output=True, timeout=5).returncode == 0)
+        return "  ** A newer version of the lab is available: run  python infra/update.py **" if behind else ""
+    except Exception:
+        return ""
+
+
 def banner(ctx, execute: bool) -> None:
     up = [n for n in ("github", "jenkins", "argocd", "airflow", "service") if getattr(ctx, n)]
     print("=" * 78)
@@ -26,6 +47,8 @@ def banner(ctx, execute: bool) -> None:
     print(f"connected: {', '.join(up) or 'nothing'}")
     for n, why in ctx.errors.items():
         print(f"  not connected: {n} ({why})")
+    if notice := update_notice():
+        print(notice)
     print("=" * 78)
 
 

@@ -125,7 +125,7 @@ Public is required: Argo CD and Jenkins clone the repo without credentials.
 - Actions: open the **Actions** tab of your fork, then **I understand my workflows, go ahead and enable them**.
 - Issues: `gh repo edit <you>/selfheal-demo --enable-issues` (or Settings > General > Features > **Issues**).
 
-Already have a copy from earlier? Follow [UPDATING.md](UPDATING.md) to get the latest version.
+Already have a copy from earlier? Run `python infra/update.py` (the first time, see [UPDATING.md](UPDATING.md)).
 
 ## 4. Configure
 
