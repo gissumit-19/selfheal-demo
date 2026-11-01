@@ -29,7 +29,8 @@ def wait_http(name: str, url: str, auth: tuple[str, str] | None = None, timeout:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as r:
+            no_proxy = urllib.request.build_opener(urllib.request.ProxyHandler({}))   # local: never via a proxy
+            with no_proxy.open(urllib.request.Request(url, headers=headers), timeout=10) as r:
                 if r.status == 200:
                     print(" up")
                     return

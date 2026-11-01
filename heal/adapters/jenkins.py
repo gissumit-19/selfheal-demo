@@ -8,6 +8,8 @@ from urllib.parse import quote
 
 import requests
 
+from heal.adapters._http import local_session
+
 TREE = "number,result,building,timestamp,duration,url,actions[parameters[name,value],causes[shortDescription]]"
 
 
@@ -17,7 +19,7 @@ class Jenkins:
     def __init__(self, url: str, user: str, token: str, job: str):
         self.url, self.job = url.rstrip("/"), job
         self.job_url = f"{self.url}/job/{quote(job)}"
-        self.http = requests.Session()
+        self.http = local_session()
         self.http.auth = (user, token)
         self._crumb: dict | None = None
 

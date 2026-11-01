@@ -9,13 +9,15 @@ from datetime import datetime, timezone
 import requests
 import urllib3
 
+from heal.adapters._http import local_session
+
 
 class ArgoCD:
     name = "argocd"
 
     def __init__(self, url: str, app: str, user: str = "", password: str = "", token: str = "", verify_tls: bool = True):
         self.url, self.app_name = url.rstrip("/"), app
-        self.http = requests.Session()
+        self.http = local_session()
         self.http.verify = verify_tls
         if not verify_tls:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

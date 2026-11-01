@@ -7,24 +7,27 @@ import time
 
 import requests
 
+from heal.adapters._http import local_session
+
 
 class ServiceProbe:
     name = "service"
 
     def __init__(self, url: str, p95_budget_ms: float = 800, max_error_pct: float = 1.0, requests_per_probe: int = 20):
         self.url, self.p95_budget, self.max_err, self.n = url.rstrip("/"), p95_budget_ms, max_error_pct, requests_per_probe
+        self.http = local_session()
 
     def probe(self) -> dict:
         version, errors, latencies, samples = "unknown", 0, [], []
         try:
-            version = requests.get(f"{self.url}/healthz", timeout=5).json().get("version", "unknown")
+            version = self.http.get(f"{self.url}/healthz", timeout=5).json().get("version", "unknown")
         except (requests.RequestException, ValueError) as e:
             return {"healthy": False, "reachable": False, "detail": f"{self.url}/healthz unreachable: {e}"}
         ids = [f"seg-{i}" for i in range(120)]              # same payload the Airflow DAG publishes
         for _ in range(self.n):
             t = time.perf_counter()
             try:
-                r = requests.post(f"{self.url}/v3/segments/bulk", json={"segment_ids": ids}, timeout=5)
+                r = self.http.post(f"{self.url}/v3/segments/bulk", json={"segment_ids": ids}, timeout=5)
                 ok = r.status_code == 200
                 if not ok and len(samples) < 2:
                     samples.append(f"{r.status_code}: {r.text[:160]}")

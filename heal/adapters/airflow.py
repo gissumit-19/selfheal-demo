@@ -10,6 +10,8 @@ from urllib.parse import quote
 
 import requests
 
+from heal.adapters._http import local_session
+
 
 def _q(s: str) -> str:
     return quote(s, safe="")
@@ -20,7 +22,7 @@ class Airflow:
 
     def __init__(self, url: str, user: str, password: str, dag_id: str):
         self.url, self.dag = url.rstrip("/"), dag_id
-        self.http = requests.Session()
+        self.http = local_session()
         r = self.http.post(f"{self.url}/auth/token", json={"username": user, "password": password}, timeout=30)
         r.raise_for_status()
         self.http.headers["Authorization"] = f"Bearer {r.json()['access_token']}"
