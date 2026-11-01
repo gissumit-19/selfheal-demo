@@ -10,10 +10,15 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
+# An empty line in .env (e.g. `OPENAI_BASE_URL=`) means "not set". Remove those from the environment, otherwise
+# the SDKs read the empty string itself (an empty base URL = "Request URL is missing an 'http://' protocol").
+for _key, _value in dotenv_values(ROOT / ".env").items():
+    if not (_value or "").strip() and os.environ.get(_key, "") == "":
+        os.environ.pop(_key, None)
 
 
 def env(name: str, default: str = "") -> str:

@@ -46,15 +46,29 @@ class Refused(Exception):
     pass
 
 
+OPENAI_DEFAULT_URL = "https://api.openai.com/v1"
+
+
+def anthropic_client(s: Settings):
+    import anthropic
+
+    return anthropic.Anthropic()
+
+
+def openai_client(s: Settings):
+    """Always an explicit URL: never let the SDK pick up an empty OPENAI_BASE_URL from the environment."""
+    from openai import OpenAI
+
+    return OpenAI(base_url=(s.openai_base_url or "").strip() or OPENAI_DEFAULT_URL)
+
+
 # --------------------------------------------------------------------------- backends
 class AnthropicChat:
     """Claude through the Anthropic SDK."""
 
     def __init__(self, s: Settings, tools: list[dict]):
-        import anthropic
-
         self.s, self.tools, self.messages = s, tools, []
-        self.client = anthropic.Anthropic()
+        self.client = anthropic_client(s)
 
     def user(self, text: str) -> None:
         self.messages.append({"role": "user", "content": text})
@@ -81,10 +95,8 @@ class OpenAIResponses:
     Conversation state is chained server-side with previous_response_id."""
 
     def __init__(self, s: Settings, tools: list[dict]):
-        from openai import OpenAI
-
         self.s = s
-        self.client = OpenAI(base_url=s.openai_base_url or None)
+        self.client = openai_client(s)
         self.tools = [{"type": "function", "name": t["name"], "description": t["description"],
                        "parameters": t["input_schema"], "strict": True} for t in tools]
         self.pending: list[dict] = []
@@ -116,10 +128,8 @@ class OpenAIChat:
     without the Responses API. With gpt-5.x, leave OPENAI_REASONING_EFFORT empty in this mode."""
 
     def __init__(self, s: Settings, tools: list[dict]):
-        from openai import OpenAI
-
         self.s = s
-        self.client = OpenAI(base_url=s.openai_base_url or None)
+        self.client = openai_client(s)
         self.tools = [{"type": "function", "function": {"name": t["name"], "description": t["description"],
                                                         "parameters": t["input_schema"], "strict": True}} for t in tools]
         self.messages: list[dict] = [{"role": "system", "content": SYSTEM}]

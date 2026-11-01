@@ -68,15 +68,15 @@ def key_hint(provider: str) -> str:
 def sdk_check(env: dict) -> None:
     """Connect the way the agent does (through the model SDK), so proxy/certificate problems show up here."""
     sys.path.insert(0, str(ROOT))
-    import heal  # noqa: F401  (switches HTTPS to the OS certificate store, like the agent)
-    provider = chosen_provider(env)
+    # Exactly what the agent does: same settings loading (.env), same client factory, same certificates.
+    from heal.agent import anthropic_client, openai_client
+    from heal.config import SETTINGS
+    provider = SETTINGS.provider
     try:
-        if provider == "openai" and env.get("OPENAI_API_KEY"):
-            import openai
-            openai.OpenAI(api_key=env["OPENAI_API_KEY"], base_url=env.get("OPENAI_BASE_URL") or None).models.list()
-        elif provider == "anthropic" and env.get("ANTHROPIC_API_KEY"):
-            import anthropic
-            anthropic.Anthropic(api_key=env["ANTHROPIC_API_KEY"]).models.list()
+        if provider == "openai":
+            openai_client(SETTINGS).models.list()
+        elif provider == "anthropic":
+            anthropic_client(SETTINGS).models.list()
         else:
             return
         ok(f"{provider} SDK can connect (same path the agent uses)")
