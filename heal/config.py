@@ -6,6 +6,7 @@ built only when its settings are present, so the same agent runs in a GitHub Act
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,6 +24,13 @@ for _key, _value in dotenv_values(ROOT / ".env").items():
 
 def env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
+
+
+def local_url(name: str, default: str = "") -> str:
+    """URLs of the local systems. `localhost` becomes 127.0.0.1: on Windows `localhost` tries IPv6 (::1) first,
+    the published ports listen on IPv4 only, and every request then waits ~2 s for the refused IPv6 attempt.
+    That made traffic-api look slow (p95 > 2000 ms) and the guard refuse rebuilds."""
+    return re.sub(r"//localhost(?=[:/]|$)", "//127.0.0.1", env(name, default))
 
 
 def _github_token() -> str:
@@ -70,13 +78,13 @@ class Settings:
     github_api: str = env("GITHUB_API_URL", "https://api.github.com")
 
     # Jenkins
-    jenkins_url: str = env("JENKINS_URL")
+    jenkins_url: str = local_url("JENKINS_URL")
     jenkins_user: str = env("JENKINS_USER", "admin")
     jenkins_token: str = env("JENKINS_TOKEN")
     jenkins_job: str = env("JENKINS_JOB", "traffic-api-ci")
 
     # Argo CD
-    argocd_url: str = env("ARGOCD_URL")
+    argocd_url: str = local_url("ARGOCD_URL")
     argocd_user: str = env("ARGOCD_USER", "admin")
     argocd_password: str = env("ARGOCD_PASSWORD")
     argocd_token: str = env("ARGOCD_TOKEN")
@@ -84,13 +92,13 @@ class Settings:
     argocd_verify_tls: bool = env("ARGOCD_VERIFY_TLS", "false") == "true"
 
     # Airflow 3 (REST API v2)
-    airflow_url: str = env("AIRFLOW_URL")
+    airflow_url: str = local_url("AIRFLOW_URL")
     airflow_user: str = env("AIRFLOW_USER", "admin")
     airflow_password: str = env("AIRFLOW_PASSWORD")
     airflow_dag: str = env("AIRFLOW_DAG", "traffic_probe_daily")
 
     # The service the pipelines deliver (deploy monitor + dependency health)
-    service_url: str = env("SERVICE_URL")
+    service_url: str = local_url("SERVICE_URL")
     smoke_p95_ms: float = float(env("SMOKE_P95_MS", "800"))
     smoke_max_error_pct: float = float(env("SMOKE_MAX_ERROR_PCT", "1.0"))
 

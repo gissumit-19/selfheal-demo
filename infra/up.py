@@ -88,8 +88,8 @@ def main() -> None:
     print("==> Jenkins + Airflow")
     run("docker", "compose", "-f", str(ROOT / "infra" / "compose.yaml"), "--env-file", str(ENV_FILE), "up", "-d", "--build")
     env = read_env()
-    wait_http("Jenkins", f"{env.get('JENKINS_URL', 'http://localhost:8081')}/api/json", ("admin", env.get("JENKINS_TOKEN", "")))
-    wait_http("Airflow", f"{env.get('AIRFLOW_URL', 'http://localhost:8082')}/api/v2/monitor/health")
+    wait_http("Jenkins", f"{env.get('JENKINS_URL', 'http://127.0.0.1:8081')}/api/json", ("admin", env.get("JENKINS_TOKEN", "")))
+    wait_http("Airflow", f"{env.get('AIRFLOW_URL', 'http://127.0.0.1:8082')}/api/v2/monitor/health")
 
     print(f"""
 All systems up:

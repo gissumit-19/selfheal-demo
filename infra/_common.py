@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -32,6 +33,9 @@ def read_env() -> dict[str, str]:
                 k, v = line.split("=", 1)
                 values[k.strip()] = v.strip().strip('"').strip("'")
     values.update({k: v for k, v in os.environ.items() if v})   # exported keys count too (e.g. API keys)
+    for k, v in values.items():                  # same rule as heal/config.py: 127.0.0.1, never localhost
+        if k.endswith("_URL") and k != "OPENAI_BASE_URL":
+            values[k] = re.sub(r"//localhost(?=[:/]|$)", "//127.0.0.1", v)
     return values
 
 
