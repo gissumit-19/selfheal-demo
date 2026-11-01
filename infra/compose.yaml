@@ -17,11 +17,12 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
-      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/passwords.json
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/auth/passwords.json
       TRAFFIC_API_URL: http://host.docker.internal:30080
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/passwords.json:/opt/airflow/passwords.json
+      # folders, not single files: a single-file mount breaks when git rewrites the file (git pull/reset)
+      - ../airflow/auth:/opt/airflow/auth
 volumes:
   jenkins_home: {}

@@ -35,7 +35,11 @@ Check: `git log --oneline -1` shows the newest commit from the repo page, and `i
 
 Fix any `[FAIL]` lines. In particular, `GITHUB_REPO` in `.env` must be **your** fork (`<you>/selfheal-demo`).
 
-**5. Continue with the guide.** If you already brought the systems up with the old `up.sh`, nothing needs rebuilding:
-`python infra/up.py` is safe to run again. Then `python scenarios.py bootstrap`.
+**5. Apply the update to the running systems.** Always run this after updating, even if everything was already up.
+It recreates any container whose settings changed (your cluster and data are kept):
+```
+python infra/up.py
+```
+Then `python scenarios.py bootstrap`.
 The old `up.sh` may have switched your kubectl context to `kind-heal-demo`. Check with
 `kubectl config current-context`, and switch back with `kubectl config use-context <your-old-context>` if you use other clusters.
